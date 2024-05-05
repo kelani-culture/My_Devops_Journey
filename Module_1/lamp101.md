@@ -22,7 +22,7 @@ Linux Apache Mysql and Php are part of the many web stack that are used too powe
     $ sudo systemctl status apache
     ``` 
 
-    ![apache status](apache_status1.png)
+    ![apache status](image/apache_status1.png)
 
     if the status shows disable as shown below we might need to turn on the apache web server
 
@@ -31,7 +31,7 @@ Linux Apache Mysql and Php are part of the many web stack that are used too powe
     ``` 
     to confirm the server is running we can run systemctl status all over again
 
-    ![apache status](apache_status2.png) 
+    ![apache status](image/apache_status2.png) 
 
     there we can clearly see the server is running this allows us too run the curl command on the server from our ***CLI*** using
 
@@ -85,8 +85,10 @@ Linux Apache Mysql and Php are part of the many web stack that are used too powe
     ```bash
     $ php -v
     ```
-    ![php version](php_version.png)
+    ![php version](image/php_version.png)
 
     if this shows it means php has been successfully installed on our ubuntu server
 
 This concludes our **LAMP** setup
+
+CREDIT to [Steghub](https://steghub.com/) for giving this opportunity
