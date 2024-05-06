@@ -91,4 +91,4 @@ Linux Apache Mysql and Php are part of the many web stack that are used too powe
 
 This concludes our **LAMP** setup
 
-CREDIT to [Steghub](https://steghub.com/) for giving this opportunity
+CREDIT to [Steghub](https://steghub.com/) for me giving this opportunity
