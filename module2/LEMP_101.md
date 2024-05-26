@@ -1,4 +1,3 @@
-<!-- @format -->
 
 # LEMP101 Setup
 
