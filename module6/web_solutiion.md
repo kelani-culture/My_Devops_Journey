@@ -394,3 +394,178 @@ sudo systemctl daemon-reload
 
 and now we can verify our setup by running df -h command
 ![setup](image/setup.png)
+
+## Prepare Database server
+
+to prepare the database server we are going to have to reiterate through the same step over again but this time we are goiing to make some few changes
+
+1. first we launch our RedHat Server and then create three volume groups too attach to the server like we did in the first instance
+
+2. we log intoo our server and then we create our partitions on each volume group created
+
+![vg-ppartition](image/db_server-lsblk-created.png)
+
+3. then we install lvm 2 by running the following command
+```bash
+sudo yum install -y lvm2
+```
+
+4. we create a physical server on each partion device by running the followng command
+
+```bash
+sudo pvcreate /dev/xvdb1 /dev/xvdc1 /dev/xvdd1
+```
+![pvs](image/db_server-pvs.png)
+
+5. we create a volume group with the vg create command
+
+```bash
+sudo vgcreate dbserver-vg  /dev/xvdb1 /dev/xvdc1 /dev/xvdd1
+```
+![volume_group-create](image/db_server-vg-created.png)
+
+![lv-create](image/db_server-lv-created.png)
+
+now we need to create  /db folder and mount it to the create logical volume by running the following command
+
+```bash
+sudo mkfs -t ext4 /dev/dbserver-vg/db-lv
+
+sudo mkdir /db
+sudo mount /dev/dbserver-vg/db-lv /db
+```
+
+after that we update /etc/fstab file so that the mount configuration will persist after reload.
+
+![blkid](image/db_server-blkid.png)
+![blkiid](image/db_server-fstab.png)
+
+
+## Word press Installation on Webserver 
+
+1. Update the repository
+```
+sudo yum -y update
+```
+2. Install wget, Apache and it's dependencies
+sudo yum -y install wget httpd php php-mysqlnd php-fpm php-json
+3. Start Apache
+```
+sudo systemctl enable httpd sudo systemctl start httpd
+```
+4. To install PHP and it's dependencies
+```
+sudo yum install https://dl.fedoraproject.org/pub/epel/epel-releaselatest-8.noarch.rpm
+sudo yum install yum-utils http://rpms.remirepo.net/enterprise/remirelease-8.rpm
+sudo yum module list php sudo yum module reset php
+```
+```
+sudo yum module enable php:remi-7.4
+sudo yum install php php-opcache php-gd php-curl php-mysqlnd
+sudo systemctl start php-fpm
+sudo systemctl enable php-fpm setsebool -P httpd_execmem 1
+```
+5. Restart Apache
+```
+sudo systemctl restart httpd
+```
+6. Download wordpress and copy wordpress to /var/www/htmlmkdir
+wordpress cd wordpress
+```
+sudo wget http://wordpress.org/latest.tar.gz sudo tar xzvf
+latest.tar.gz
+sudo rm -rf latest.tar.gz cp wordpress/wp-config-sample.php wordpress/wp-config.php
+cp -R wordpress /var/www/html/
+```
+7. Configure SELinux Policies
+```
+sudo chown -R apache:apache /var/www/html/wordpress
+sudo chcon -t httpd_sys_rw_content_t /var/www/html/wordpress -R
+sudo setsebool -P httpd_can_network_connect=1
+```
+
+
+## Install MySQL on DB-server
+In this section we are going to install MySQL on the DB-Server.
+
+```bash
+sudo yum update
+sudo yum install -y mysql-server
+```
+to ensure that mysqld is currecntly up and rrunning.
+```bash
+sudo systemctl restart mysqld
+sudo systemctl enable mysqld
+```
+
+now we are going create a new database and a user
+
+```bash
+sudo mysql
+```
+```sql
+CREATE DATABASE wordpress;
+CREATE USER `user`@`<Web-Server-Private-IP-Address>` IDENTIFIED BY 'mypass';
+GRANT ALL ON wordpress.* TO 'user'@'<Web-Server-Private-IPAddress>';
+FLUSH PRIVILEGES;
+SHOW DATABASE;
+```
+![database](image/db_server-show-database.png)
+
+
+we need to configure our DB-server security group to open port 3306 which is the mysql default port number while also mking sure our client-server is the only one accessed too the db server
+
+![SQL_port_allowed](image/mysql_port-configured.png)
+
+# Install MySQL Client on Client-server
+
+now we are going to install MySQL client on the Client Server
+
+```bash
+sudo yum install -y mysql
+```
+the followinc command is going to make us connect to the mysql server
+
+```bash
+sudo mysql -u <user> -p -h <DB-server-private-IPaddress>
+```
+![client](image/client_db.png)
+
+during the creation of our client server we allowed our port to listen on port 80 now we can configure our client server to give apache permission too word press by running the following command
+
+```bash
+sudo vi /etc/httpd/conf.d/wordpress.conf
+```
+
+inside of the file we write the following code
+```apache
+<VirtualHost *:80>
+    # ServerAdmin admin@example.com
+    DocumentRoot /var/www/html/wordpress
+    ServerName <client-public-IPAddress>
+
+    <Directory /var/www/html/wordpress>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    ErrorLog /var/log/httpd/wordpress-error.log
+    CustomLog /var/log/httpd/wordpress-access.log combined
+</VirtualHost>
+```
+now all tht remains is too restart our apache server
+```bash
+sudo systemctl restart httpd
+```
+
+now we can visit our site tooo see the following
+```
+http://<client-public-IPAddress>
+```
+
+![wordpress](image/wordpress.png)
+
+there we are done with Web Solution With Wordpress
+
+thanks to steghub for 
